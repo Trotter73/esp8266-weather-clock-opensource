@@ -632,7 +632,7 @@ Replace polling with WebSocket for:
    ```
 
 2. **Compile and Upload**:
-   - Open `clock_ntp_ota_v1.9.ino`
+   - Open `weather_clock.ino`
    - Sketch → Upload
    - Wait for "Done uploading"
    - Remove GPIO0-to-GND jumper
@@ -971,8 +971,8 @@ Device reboots immediately.
 ```
 esp8266-weather-clock/
 ├── firmware/
-│   └── clock_ntp_ota_v1.9/
-│       └── clock_ntp_ota_v1.9.ino  # Main firmware (~2,100 lines)
+│   └── weather_clock/
+│       └── weather_clock.ino       # Main firmware (~2,100 lines)
 ├── docs/
 │   ├── HARDWARE.md                 # Hardware specifications
 │   ├── INSTALLATION.md             # Flashing guide

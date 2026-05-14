@@ -70,7 +70,7 @@ Feature requests are welcome! Please include:
 ```bash
 # Arduino IDE: Sketch → Verify/Compile
 # Or use arduino-cli:
-arduino-cli compile --fqbn esp8266:esp8266:generic firmware/clock_ntp_ota_v1.9
+arduino-cli compile --fqbn esp8266:esp8266:generic firmware/weather_clock
 ```
 
 ### Testing
@@ -87,7 +87,7 @@ curl -u admin:admin -F "file=@build/*.bin" http://192.168.x.x/update
 
 ```
 esp8266-weather-clock-opensource/
-├── firmware/               # Main firmware source (clock_ntp_ota_v1.9/)
+├── firmware/               # Main firmware source (weather_clock/)
 ├── docs/                   # Documentation
 ├── images/                 # Photos and screenshots
 ├── README.md               # Main documentation

@@ -64,16 +64,17 @@ Go to: **Sketch → Include Library → Manage Libraries**
 
 Install the following libraries (search by name):
 
-| Library | Author | Min Version | Purpose |
-|---------|--------|-------------|---------|
-| **Adafruit GFX Library** | Adafruit | 1.11.0 | Graphics primitives |
-| **Adafruit SSD1306** | Adafruit | 2.5.0 | OLED display driver |
-| **NTPClient** | Fabrice Weinberg | 3.2.0 | NTP time sync (base) |
-| **WiFiManager** | tzapu | 2.0.0 | Captive portal setup |
-| **AsyncHTTPRequest_Generic** | Khoi Hoang | 1.13.0 | Async weather fetch |
-| **ESPAsyncTCP** | me-no-dev | 1.2.2 | Async TCP (required by above) |
+| Library                      | Author           | Min Version | Purpose                       |
+| ---------------------------- | ---------------- | ----------- | ----------------------------- |
+| **Adafruit GFX Library**     | Adafruit         | 1.11.0      | Graphics primitives           |
+| **Adafruit SSD1306**         | Adafruit         | 2.5.0       | OLED display driver           |
+| **NTPClient**                | Fabrice Weinberg | 3.2.0       | NTP time sync (base)          |
+| **WiFiManager**              | tzapu            | 2.0.0       | Captive portal setup          |
+| **AsyncHTTPRequest_Generic** | Khoi Hoang       | 1.13.0      | Async weather fetch           |
+| **ESPAsyncTCP**              | me-no-dev        | 1.2.2       | Async TCP (required by above) |
 
 **Installation steps for each library:**
+
 1. Search library name in Library Manager
 2. Click **Install**
 3. Wait for "INSTALLED" badge
@@ -87,17 +88,17 @@ Install the following libraries (search by name):
 2. Select: **Generic ESP8266 Module**
 3. Configure settings:
 
-| Setting | Value | Why |
-|---------|-------|-----|
-| Flash Size | `1MB (FS:64KB OTA:~470KB)` | Enables OTA with 470KB max firmware |
-| Flash Mode | `DIO` | Compatible with most ESP-01S modules |
-| Flash Frequency | `40MHz` | Safe default for all ESP8266 |
-| CPU Frequency | `80MHz` | Standard (can use 160MHz for more speed) |
-| Crystal Frequency | `26MHz` | Default for ESP-01S |
-| Upload Speed | `115200` | Balance between speed and reliability |
-| Debug Level | `None` | Reduces firmware size |
-| IwIP Variant | `v2 Lower Memory` | Better for 1MB flash devices |
-| Erase Flash | `Only Sketch` | Preserves config on re-flash |
+| Setting           | Value                      | Why                                      |
+| ----------------- | -------------------------- | ---------------------------------------- |
+| Flash Size        | `1MB (FS:64KB OTA:~470KB)` | Enables OTA with 470KB max firmware      |
+| Flash Mode        | `DIO`                      | Compatible with most ESP-01S modules     |
+| Flash Frequency   | `40MHz`                    | Safe default for all ESP8266             |
+| CPU Frequency     | `80MHz`                    | Standard (can use 160MHz for more speed) |
+| Crystal Frequency | `26MHz`                    | Default for ESP-01S                      |
+| Upload Speed      | `115200`                   | Balance between speed and reliability    |
+| Debug Level       | `None`                     | Reduces firmware size                    |
+| IwIP Variant      | `v2 Lower Memory`          | Better for 1MB flash devices             |
+| Erase Flash       | `Only Sketch`              | Preserves config on re-flash             |
 
 ---
 
@@ -106,6 +107,7 @@ Install the following libraries (search by name):
 ### Step 1: Identify Pins
 
 ESP-01S pinout (looking at module from top, antenna up):
+
 ```
        ┌─────────────┐
        │             │
@@ -123,15 +125,16 @@ ESP-01S pinout (looking at module from top, antenna up):
 
 **Connections:**
 
-| FTDI Pin | ESP-01S Pin | Wire Color | Notes |
-|----------|-------------|------------|-------|
-| 3.3V | 3V3 | Red | Power (NOT 5V!) |
-| GND | GND | Black | Ground |
-| TX | RX | Yellow | Data: FTDI transmit → ESP receive |
-| RX | TX | Green | Data: FTDI receive → ESP transmit |
-| GND | GPIO0 | Blue | **Programming mode** (temporary) |
+| FTDI Pin | ESP-01S Pin | Wire Color | Notes                             |
+| -------- | ----------- | ---------- | --------------------------------- |
+| 3.3V     | 3V3         | Red        | Power (NOT 5V!)                   |
+| GND      | GND         | Black      | Ground                            |
+| TX       | RX          | Yellow     | Data: FTDI transmit → ESP receive |
+| RX       | TX          | Green      | Data: FTDI receive → ESP transmit |
+| GND      | GPIO0       | Blue       | **Programming mode** (temporary)  |
 
 **⚠️ CRITICAL**:
+
 - **Never connect 5V to ESP-01S** - it's not 5V tolerant!
 - Double-check polarity before powering on
 - GPIO0-to-GND connection is **temporary** (only for programming mode)
@@ -152,8 +155,8 @@ ESP-01S is now in programming mode, ready to receive firmware.
 ### Step 1: Open Project
 
 1. Download or clone this repository
-2. Navigate to: `esp8266-weather-clock-opensource/src/`
-3. Open: `clock_ntp_ota_v1.9.ino` in Arduino IDE
+2. Navigate to: `esp8266-weather-clock-opensource/firmware/weather_clock/`
+3. Open: `weather_clock.ino` in Arduino IDE
 
 ### Step 2: Verify Board Settings
 
@@ -166,6 +169,7 @@ ESP-01S is now in programming mode, ready to receive firmware.
    - Windows: `COM3`, `COM4`, etc.
 
 If port doesn't appear:
+
 - Check USB cable is data-capable (not charge-only)
 - Install FTDI drivers
 - Try different USB port
@@ -222,10 +226,12 @@ If port doesn't appear:
 ### Step 2: Captive Portal
 
 **Automatic (iOS/Android):**
+
 - Captive portal should pop up automatically
 - If not, manually browse to: http://192.168.4.1
 
 **Manual (laptop):**
+
 - Browse to: http://192.168.4.1
 
 ### Step 3: Configure WiFi
@@ -240,16 +246,19 @@ If port doesn't appear:
 ### Step 4: Find Device IP
 
 **Method 1: Router Admin Panel**
+
 - Log into your router
 - Look for device: "tj56654-clock"
 - Note its IP address (e.g., 192.168.1.47)
 
 **Method 2: mDNS (if your OS supports it)**
+
 - Browse to: http://tj56654-clock.local/
 - Works on macOS, Linux, iOS out-of-box
 - Windows: Install [Bonjour Print Services](https://support.apple.com/kb/DL999)
 
 **Method 3: Serial Monitor**
+
 1. Keep FTDI connected (no GPIO0 to GND!)
 2. Open: **Tools → Serial Monitor**
 3. Set baud rate: **115200**
@@ -261,6 +270,7 @@ If port doesn't appear:
 Browse to: `http://<device-ip>/` or `http://tj56654-clock.local/`
 
 You should see:
+
 - Current time display
 - Navigation links (Config, Debug, Update)
 
@@ -276,6 +286,7 @@ You should see:
 4. Device reboots with new settings
 
 **Timezone examples:**
+
 - UTC+0 (London winter): `0`
 - UTC+1 (Paris winter): `3600`
 - UTC-5 (New York winter): `-18000`
@@ -319,6 +330,7 @@ curl -u admin:admin -F "file=@/path/to/firmware.bin" http://192.168.x.x/update
 ```
 
 Replace:
+
 - `192.168.x.x` with your device IP
 - `/path/to/firmware.bin` with actual path to .bin file
 
@@ -329,43 +341,51 @@ Replace:
 ### Upload Fails
 
 **Error: "espcomm_open failed"**
+
 - Check: GPIO0 was grounded during power-on
 - Check: FTDI driver installed
 - Try: Different USB port
 - Try: Lower upload speed (57600 instead of 115200)
 
 **Error: "espcomm_upload_mem failed"**
+
 - Check: Wire connections (especially RX↔TX swap)
 - Check: FTDI is 3.3V (not 5V)
 - Try: Power ESP-01S from external 3.3V supply (FTDI may not provide enough current)
 
 **Error: "Chip sync error"**
+
 - GPIO0 must be LOW during boot
 - Try: Hold GPIO0 to GND, reset ESP, then release GPIO0
 
 ### Compilation Fails
 
 **Error: "library not found"**
+
 - Install missing library via Library Manager
 - Restart Arduino IDE after installing
 
 **Error: "Sketch too big"**
+
 - Flash size must be set to 1MB
 - Reduce features if necessary (disable weather, etc.)
 
 **IRAM overflow error**
+
 - Some functions missing `ICACHE_FLASH_ATTR`
 - Use version from this repo (already optimized)
 
 ### WiFi Connection Fails
 
 **Device creates AP but won't connect to home WiFi**
+
 - ESP8266 only supports 2.4GHz (not 5GHz)
 - Try: Different WiFi channel (1, 6, or 11)
 - Check: WiFi password is correct
 - Check: Router supports 802.11n
 
 **Device reboots in a loop**
+
 - Likely: Power supply too weak (brownout)
 - Solution: Use powered USB hub or different power adapter
 - Minimum: 500mA @ 5V
@@ -373,28 +393,33 @@ Replace:
 ### Display Issues
 
 **Display is blank**
+
 - Check: I2C wiring (SDA=GPIO0, SCL=GPIO2)
 - Check: Display I2C address (try 0x3C and 0x3D in code)
 - Test: Use `/api/i2c-scan` endpoint to detect display
 
 **Display shows garbage**
+
 - Wrong display library or initialization
 - This firmware is for SSD1306-compatible OLED
 - Verify display model is GM009605v4.3 or similar
 
 **Display is upside down**
+
 - Change `display_orientation` in `/config`
 - Values: 0 (normal), 1 (90°), 2 (180°), 3 (270°)
 
 ### Time Not Syncing
 
 **Time shows 00:00:00**
+
 - Check: WiFi is connected (`/api/status`)
 - Check: NTP server is reachable (default: pool.ntp.org)
 - Check: Router firewall allows UDP port 123
 - Try: Different NTP server (e.g., time.google.com)
 
 **Time is wrong by hours**
+
 - Check: Timezone offset in `/config`
 - Remember: Offset is in **seconds**, not hours
   - Example: UTC+1 = 3600 seconds
@@ -402,6 +427,7 @@ Replace:
 ### Weather Not Updating
 
 **Temperature shows 0.0°C**
+
 - Check: Internet connectivity (`/api/debug`)
 - Check: Latitude/longitude are correct
 - Check: Open-Meteo API is accessible (visit https://open-meteo.com/ in browser)
@@ -410,11 +436,13 @@ Replace:
 ### OTA Update Fails
 
 **Web upload hangs at 0%**
+
 - Check: Device is online and responsive
 - Try: Smaller firmware (disable features)
 - Try: Upload via Arduino IDE instead
 
 **Upload completes but device doesn't reboot**
+
 - Wait 30 seconds (sometimes slow)
 - Manually power cycle device
 - Check serial output for errors
@@ -422,10 +450,12 @@ Replace:
 ### Serial Monitor Shows Errors
 
 **"DNS resolution failed"**
+
 - In v1.9.0 (fixed in v1.9.1)
 - Upgrade to v1.9.1 or later
 
 **Watchdog reset / exception**
+
 - Likely: Code bug or memory corruption
 - Check: IRAM usage < 95%
 - Report: Open issue with serial log
@@ -437,6 +467,7 @@ Replace:
 ### Change OTA Password
 
 Edit in source code (line ~60):
+
 ```cpp
 ArduinoOTA.setPassword("your-secret-password");
 ```
@@ -444,6 +475,7 @@ ArduinoOTA.setPassword("your-secret-password");
 ### Change Web Admin Password
 
 Edit in source code (line ~430):
+
 ```cpp
 if (!server.authenticate("admin", "your-secret-password")) {
 ```
@@ -453,13 +485,16 @@ if (!server.authenticate("admin", "your-secret-password")) {
 To save memory, disable unused features:
 
 **Disable weather:**
+
 - Set `weather_enabled = false` in `/config`
 - Or remove weather code from source
 
 **Disable sunrise/sunset:**
+
 - Set `show_sunrise_sunset = false` in `/config`
 
 **Disable display rotation:**
+
 - Set `display_rotation_sec = 0` (manual switch only)
 
 ---
