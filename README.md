@@ -60,6 +60,7 @@ When you first set up the device, it creates an access point with a default pass
 5. **Your WiFi password is displayed in plaintext on the config page**
 
 Anyone within WiFi range could:
+
 - Connect to the device's AP (weak default password)
 - Browse to 192.168.4.1
 - Read your WiFi password in plaintext
@@ -78,13 +79,13 @@ This is a textbook example of poor IoT security design. No thanks.
 
 ### Original Hardware Specifications
 
-| Component | Details |
-|-----------|---------|
-| **MCU** | ESP-01S (ESP8266EX, 1MB flash, 80KB RAM) |
-| **Display** | GM009605v4.3 OLED (128x64, I2C) |
-| **Power** | 5V USB (Micro-USB) |
-| **Case** | Transparent acrylic (40x40x43mm) |
-| **PCB** | TJ-56-654 main board |
+| Component   | Details                                  |
+| ----------- | ---------------------------------------- |
+| **MCU**     | ESP-01S (ESP8266EX, 1MB flash, 80KB RAM) |
+| **Display** | GM009605v4.3 OLED (128x64, I2C)          |
+| **Power**   | 5V USB (Micro-USB)                       |
+| **Case**    | Transparent acrylic (40x40x43mm)         |
+| **PCB**     | TJ-56-654 main board                     |
 
 ### What It Came With
 
@@ -119,6 +120,7 @@ The transparent case made inspection easy - just unscrew the brass standoffs. In
 - **No additional sensors** (temperature/humidity were from weather API, not local)
 
 The ESP-01S pinout is printed right on the PCB:
+
 ```
 3V3  |  GND
  TX  |  GPIO0  (I2C SDA)
@@ -135,6 +137,7 @@ To flash custom firmware, you need:
 3. **Steady hands**
 
 **Wiring:**
+
 ```
 FTDI        ESP-01S
 ────────────────────
@@ -146,12 +149,14 @@ FTDI        ESP-01S
 ```
 
 **Boot into flash mode:**
+
 1. Connect GPIO0 to GND
 2. Power on the device
 3. Remove GPIO0 to GND connection after boot
 4. Device is now in programming mode
 
 **Programming:**
+
 - Use Arduino IDE with ESP8266 board support
 - Select board: "Generic ESP8266 Module"
 - Flash size: 1MB (FS:64KB OTA:~470KB)
@@ -176,6 +181,7 @@ I decided to write a complete replacement firmware with:
 ### Features Implemented
 
 #### 🌐 Network & Time
+
 - **WiFiManager** captive portal for secure first-time setup
 - **Hybrid WiFi**: Synchronous on boot (ensures proper init), async reconnect during operation
 - **NTP time sync** with configurable server and interval
@@ -183,12 +189,14 @@ I decided to write a complete replacement firmware with:
 - **mDNS**: Access via `http://tj56654-clock.local/`
 
 #### 🌦️ Weather Data
+
 - **Open-Meteo API**: Free, no registration, no API key
 - **Configurable location**: Latitude/longitude + city name
 - **Data**: Temperature, sunrise, sunset, daylight duration
 - **Smart updates**: Async fetch every 30 minutes (configurable)
 
 #### 🔄 OTA Updates
+
 - **Web-based OTA**: Upload .bin files via browser at `/update`
 - **ArduinoOTA**: Update directly from Arduino IDE
 - **Non-blocking**: System stays responsive during updates
@@ -245,33 +253,39 @@ All endpoints return JSON:
 The firmware uses **zero blocking operations** in the main loop. Everything is state-machine-based:
 
 #### Weather State Machine
+
 ```cpp
 enum WeatherState { IDLE, REQUESTING, SUCCESS, FAILED };
 ```
 
 Uses `AsyncHTTPRequest` library:
+
 - Non-blocking HTTP requests
 - Callback-based response handling
 - Exponential backoff on failures (1s → 2s → 4s)
 - Maximum 3 retries before giving up
 
 #### NTP State Machine
+
 ```cpp
 enum NTPState { IDLE, REQUEST_SENT, WAITING, SUCCESS, FAILED };
 ```
 
 Custom manual NTP implementation:
+
 - Builds raw UDP packets (48 bytes)
 - Non-blocking `parsePacket()` checks
 - 5-second timeout
 - Independent epoch tracking for accuracy between syncs
 
 #### WiFi State Machine
+
 ```cpp
 enum WiFiConnectionState { IDLE, CONNECTING, CONNECTED, FAILED };
 ```
 
 **Hybrid model** (this was critical!):
+
 - **Setup phase**: Synchronous connection (waits up to 10 seconds)
   - Why? OTA, web server, NTP all need WiFi ready
   - Without this, device shows blank display for 10+ seconds
@@ -282,11 +296,11 @@ enum WiFiConnectionState { IDLE, CONNECTING, CONNECTED, FAILED };
 
 ESP8266 has strict memory limits:
 
-| Memory Type | Total | Used | Usage | Status |
-|-------------|-------|------|-------|--------|
-| **Flash** | 1,048,576 | 408,844 | 38% | ✅ Plenty |
-| **RAM** | 80,192 | 37,644 | 46% | ✅ Safe |
-| **IRAM** | 65,536 | 61,987 | **94%** | ⚠️ Critical |
+| Memory Type | Total     | Used    | Usage   | Status      |
+| ----------- | --------- | ------- | ------- | ----------- |
+| **Flash**   | 1,048,576 | 408,844 | 38%     | ✅ Plenty   |
+| **RAM**     | 80,192    | 37,644  | 46%     | ✅ Safe     |
+| **IRAM**    | 65,536    | 61,987  | **94%** | ⚠️ Critical |
 
 **IRAM Crisis Solution:**
 
@@ -304,6 +318,7 @@ Applied to 26 functions (web handlers, display, config utilities), reducing IRAM
 **String Safety:**
 
 Avoid String concatenation in loops (causes heap fragmentation):
+
 ```cpp
 // ❌ BAD - 140+ concatenations
 String html = "";
@@ -353,22 +368,27 @@ struct Config {
 This took **3 firmware iterations** to get right:
 
 **v1.5**: Assumed TM1637 (7-segment LED driver)
+
 - ❌ Wrong - device has OLED, not 7-segment LEDs
 
 **v1.6**: Tried TM1650 (another LED driver)
+
 - ❌ Wrong - I2C addresses didn't match
 
 **v1.7**: Identified GM009605v4.3 (SSD1306-compatible OLED)
+
 - ✅ Correct! Used Adafruit_SSD1306 library
 - ✅ Discovered swapped pins: SDA on GPIO0, SCL on GPIO2
 
 **Pin mapping quirk:**
 
 Standard ESP8266 I2C uses GPIO4 (SDA) and GPIO5 (SCL), but ESP-01S only exposes GPIO0 and GPIO2. The board designer mapped:
+
 - GPIO0 → SDA (unusual)
 - GPIO2 → SCL (unusual)
 
 This is **backwards** from typical breakout boards, but works perfectly once configured:
+
 ```cpp
 Wire.begin(0, 2);  // SDA=GPIO0, SCL=GPIO2
 ```
@@ -389,6 +409,7 @@ Wire.begin(0, 2);  // SDA=GPIO0, SCL=GPIO2
 **Goals**: Fix memory issues, eliminate security holes
 
 **Changes:**
+
 - IRAM optimization (added `ICACHE_FLASH_ATTR` to 26 functions)
 - Removed hardcoded WiFi credentials
 - Fixed NTP interval bug (config value was ignored)
@@ -403,6 +424,7 @@ Wire.begin(0, 2);  // SDA=GPIO0, SCL=GPIO2
 **Goals**: Eliminate all blocking operations
 
 **Changes:**
+
 - Async HTTP weather fetch (AsyncHTTPRequest library)
 - Custom async NTP implementation (manual UDP packets)
 - Async WiFi connection (state machine)
@@ -411,12 +433,12 @@ Wire.begin(0, 2);  // SDA=GPIO0, SCL=GPIO2
 
 **Performance:**
 
-| Operation | Before (v1.8) | After (v1.9.0) | Improvement |
-|-----------|---------------|----------------|-------------|
-| Weather fetch | 1-10s blocking | 0ms | ✅ Async callback |
-| NTP sync | 5-20s blocking | 0ms | ✅ Non-blocking UDP |
-| WiFi reconnect | 15s blocking | 0ms | ✅ State machine |
-| Loop time | 10ms minimum | <1ms | ✅ 10x faster |
+| Operation      | Before (v1.8)  | After (v1.9.0) | Improvement         |
+| -------------- | -------------- | -------------- | ------------------- |
+| Weather fetch  | 1-10s blocking | 0ms            | ✅ Async callback   |
+| NTP sync       | 5-20s blocking | 0ms            | ✅ Non-blocking UDP |
+| WiFi reconnect | 15s blocking   | 0ms            | ✅ State machine    |
+| Loop time      | 10ms minimum   | <1ms           | ✅ 10x faster       |
 
 **Result**: Device stays responsive during OTA updates while weather is fetching!
 
@@ -429,6 +451,7 @@ After deploying v1.9.0, the display showed **blank screen for 10 seconds** after
 **Root Cause:**
 
 Making WiFi fully async broke the **initialization order**:
+
 ```cpp
 void setup() {
   setupWiFi();                   // Returns immediately (async)
@@ -440,12 +463,13 @@ void setup() {
 
 **Solution: Hybrid Model**
 
-| Phase | WiFi Mode | Blocking? | Why? |
-|-------|-----------|-----------|------|
-| `setup()` | Synchronous | 10s max | OTA/web/NTP need WiFi ready |
-| `loop()` | Asynchronous | 0s | Don't freeze on reconnect |
+| Phase     | WiFi Mode    | Blocking? | Why?                        |
+| --------- | ------------ | --------- | --------------------------- |
+| `setup()` | Synchronous  | 10s max   | OTA/web/NTP need WiFi ready |
+| `loop()`  | Asynchronous | 0s        | Don't freeze on reconnect   |
 
 **Results:**
+
 - ✅ Display shows time immediately after WiFi connects (~15 sec boot)
 - ✅ No "DNS resolution failed" errors
 - ✅ Proper initialization order guaranteed
@@ -460,6 +484,7 @@ After WiFi outages, the device would **clear stored credentials** and enter AP m
 **Root Cause:**
 
 Aggressive credential clearing on connection failure:
+
 ```cpp
 if (wifiRetry.currentRetry >= wifiRetry.maxRetries) {
   memset(config.ssid, 0, sizeof(config.ssid));     // ❌ Clears credentials!
@@ -471,15 +496,16 @@ if (wifiRetry.currentRetry >= wifiRetry.maxRetries) {
 
 **Solution: Resilient WiFi**
 
-| Feature | Before (v1.9.1) | After (v1.9.2) |
-|---------|-----------------|----------------|
-| Credential clearing | After 5 failed attempts | Never |
-| Retry strategy | Give up after 5 tries | Infinite with backoff |
-| Max retry interval | N/A | 5 minutes |
-| Fallback AP | After clearing credentials | After ~5 min (dual STA+AP mode) |
-| Clock during outage | Blank display | Shows last synced time |
+| Feature             | Before (v1.9.1)            | After (v1.9.2)                  |
+| ------------------- | -------------------------- | ------------------------------- |
+| Credential clearing | After 5 failed attempts    | Never                           |
+| Retry strategy      | Give up after 5 tries      | Infinite with backoff           |
+| Max retry interval  | N/A                        | 5 minutes                       |
+| Fallback AP         | After clearing credentials | After ~5 min (dual STA+AP mode) |
+| Clock during outage | Blank display              | Shows last synced time          |
 
 **Key Changes:**
+
 - **Never clear credentials** on connection failure
 - **Exponential backoff**: 5s → 10s → 20s → ... → 5min max
 - **Fallback AP** ("TJ56654-Setup") enabled after ~5 min, while still retrying
@@ -490,21 +516,23 @@ if (wifiRetry.currentRetry >= wifiRetry.maxRetries) {
 
 **Network Activity Summary:**
 
-| Service | Interval | Endpoint | Protocol |
-|---------|----------|----------|----------|
-| NTP | 1 hour | pool.ntp.org:123 | UDP |
-| Weather | 30 min | api.open-meteo.com | HTTP |
-| mDNS | continuous | 224.0.0.251 | UDP multicast |
+| Service | Interval   | Endpoint           | Protocol      |
+| ------- | ---------- | ------------------ | ------------- |
+| NTP     | 1 hour     | pool.ntp.org:123   | UDP           |
+| Weather | 30 min     | api.open-meteo.com | HTTP          |
+| mDNS    | continuous | 224.0.0.251        | UDP multicast |
 
 ~50 requests/day total.
 
 **Results:**
+
 - ✅ Credentials persist through WiFi outages
 - ✅ Device automatically reconnects when WiFi returns
 - ✅ Clock continues running with last synced time
 - ✅ User can reconfigure via fallback AP if needed
 
 **Startup Timeline:**
+
 ```
 [0-5s]   Display init, startup animation
 [5-15s]  WiFi connection (SYNCHRONOUS in setup())
@@ -517,13 +545,13 @@ if (wifiRetry.currentRetry >= wifiRetry.maxRetries) {
 
 ### Memory Evolution
 
-| Version | RAM Usage | IRAM Usage | Flash Usage | Notes |
-|---------|-----------|------------|-------------|-------|
-| v1.7 | 34,980 (43%) | **61,987 (94%)** | 407,500 (38%) | IRAM crisis |
-| v1.8 | 36,980 (46%) | **45,120 (68%)** | 407,800 (38%) | ICACHE_FLASH_ATTR fix |
-| v1.9.0 | 37,516 (46%) | **61,987 (94%)** | 408,540 (38%) | Async libs added |
-| v1.9.1 | 37,644 (46%) | **61,987 (94%)** | 408,844 (38%) | Hybrid WiFi fix |
-| v1.9.2 | 37,800 (47%) | **61,987 (94%)** | 409,100 (39%) | WiFi resilience |
+| Version | RAM Usage    | IRAM Usage       | Flash Usage   | Notes                 |
+| ------- | ------------ | ---------------- | ------------- | --------------------- |
+| v1.7    | 34,980 (43%) | **61,987 (94%)** | 407,500 (38%) | IRAM crisis           |
+| v1.8    | 36,980 (46%) | **45,120 (68%)** | 407,800 (38%) | ICACHE_FLASH_ATTR fix |
+| v1.9.0  | 37,516 (46%) | **61,987 (94%)** | 408,540 (38%) | Async libs added      |
+| v1.9.1  | 37,644 (46%) | **61,987 (94%)** | 408,844 (38%) | Hybrid WiFi fix       |
+| v1.9.2  | 37,800 (47%) | **61,987 (94%)** | 409,100 (39%) | WiFi resilience       |
 
 **Verdict**: Stable memory usage, no leaks detected after 24h+ uptime tests.
 
@@ -536,6 +564,7 @@ The firmware is designed to be extensible. Next planned features:
 ### Custom Display Screens
 
 Pull data from Home Assistant via REST API:
+
 - **Smart home stats**: Energy usage, room temperatures
 - **Sensor data**: Air quality, CO2 levels
 - **Automation states**: Alarm status, door locks
@@ -549,6 +578,7 @@ Pull data from Home Assistant via REST API:
 ### WebSocket Live Updates
 
 Replace polling with WebSocket for:
+
 - Real-time config changes without page refresh
 - Live display preview in web UI
 - Push notifications for firmware updates
@@ -579,6 +609,7 @@ Replace polling with WebSocket for:
      - `WiFiManager` (by tzapu)
      - `AsyncHTTPRequest_Generic`
      - `ESPAsyncTCP`
+     - `ArduinoJson` (by Benoit Blanchon)
 
 3. **Board Configuration**
    - Board: "Generic ESP8266 Module"
@@ -591,6 +622,7 @@ Replace polling with WebSocket for:
 ### First Flash (via FTDI)
 
 1. **Wire the ESP-01S**:
+
    ```
    FTDI 3.3V  →  ESP-01S 3V3
    FTDI GND   →  ESP-01S GND
@@ -633,6 +665,7 @@ Replace polling with WebSocket for:
 ## Web Interface
 
 ### Home Page (`/`)
+
 Current time display with live updates via JavaScript (fetches `/api/time` every second).
 
 ### Configuration Page (`/config`)
@@ -640,11 +673,13 @@ Current time display with live updates via JavaScript (fetches `/api/time` every
 Comprehensive settings form:
 
 **WiFi Settings**
+
 - SSID
 - Password
 - Hostname (for mDNS)
 
 **Time Settings**
+
 - Timezone offset (seconds from UTC)
 - DST enabled (European rules)
 - NTP server address
@@ -652,6 +687,7 @@ Comprehensive settings form:
 - Hour format (12h/24h)
 
 **Weather Settings**
+
 - Enabled/disabled toggle
 - Latitude
 - Longitude
@@ -659,6 +695,7 @@ Comprehensive settings form:
 - Update interval (seconds)
 
 **Display Settings**
+
 - Brightness (0-7)
 - Rotation (0°, 90°, 180°, 270°)
 - Display rotation interval (seconds)
@@ -692,6 +729,7 @@ All endpoints return JSON (except `/update` which is for file upload).
 Current time information.
 
 **Response:**
+
 ```json
 {
   "current": "14:23:45",
@@ -707,6 +745,7 @@ Current time information.
 System status overview.
 
 **Response:**
+
 ```json
 {
   "wifi": {
@@ -733,6 +772,7 @@ System status overview.
 Current weather data.
 
 **Response:**
+
 ```json
 {
   "temperature": 15.4,
@@ -751,6 +791,7 @@ Current weather data.
 Export full configuration as JSON.
 
 **Response:**
+
 ```json
 {
   "ssid": "MyNetwork",
@@ -780,6 +821,7 @@ Import configuration from JSON.
 **Request Body**: Same structure as export response (password field optional for security).
 
 **Response:**
+
 ```json
 {
   "status": "ok"
@@ -793,6 +835,7 @@ Device automatically reboots after import.
 Factory reset (clears EEPROM).
 
 **Response:**
+
 ```json
 {
   "status": "cleared"
@@ -806,6 +849,7 @@ Device reboots to WiFiManager captive portal.
 Remote reboot.
 
 **Response:**
+
 ```json
 {
   "status": "rebooting"
@@ -820,15 +864,15 @@ Device reboots immediately.
 
 ### What Changed from Original Firmware
 
-| Issue | Original | Custom Firmware |
-|-------|----------|-----------------|
-| **WiFi Password Leak** | Plaintext in open AP | No open AP after setup |
-| **Persistent AP** | Always active | Only on first boot or failure |
-| **API Keys** | QWeather requires registration | Open-Meteo (no key needed) |
-| **Cloud Dependency** | Chinese servers | Direct API calls, no intermediary |
-| **Firmware Updates** | Manual FTDI only | OTA via WiFi (password-protected) |
-| **Config Access** | No authentication | Admin password required |
-| **Code Transparency** | Closed source | Open source (you're reading it!) |
+| Issue                  | Original                       | Custom Firmware                   |
+| ---------------------- | ------------------------------ | --------------------------------- |
+| **WiFi Password Leak** | Plaintext in open AP           | No open AP after setup            |
+| **Persistent AP**      | Always active                  | Only on first boot or failure     |
+| **API Keys**           | QWeather requires registration | Open-Meteo (no key needed)        |
+| **Cloud Dependency**   | Chinese servers                | Direct API calls, no intermediary |
+| **Firmware Updates**   | Manual FTDI only               | OTA via WiFi (password-protected) |
+| **Config Access**      | No authentication              | Admin password required           |
+| **Code Transparency**  | Closed source                  | Open source (you're reading it!)  |
 
 ### Best Practices Implemented
 
@@ -842,16 +886,19 @@ Device reboots immediately.
 ### Recommended Post-Flash Steps
 
 1. **Change OTA password**: Edit line ~60 in `.ino` file:
+
    ```cpp
    ArduinoOTA.setPassword("admin");  // Change this!
    ```
 
 2. **Change web admin password**: Edit line ~430:
+
    ```cpp
    if (!server.authenticate("admin", "admin")) {  // Change this!
    ```
 
 3. **Set strong WiFi AP fallback password**: Edit line ~780:
+
    ```cpp
    WiFi.softAP("TJ56654-Clock", "12345678");  // Change this!
    ```
@@ -900,6 +947,7 @@ Device reboots immediately.
 **Firmware**: Written from scratch with love and frustration
 
 **Libraries Used**:
+
 - [ESP8266 Arduino Core](https://github.com/esp8266/Arduino)
 - [Adafruit SSD1306](https://github.com/adafruit/Adafruit_SSD1306)
 - [WiFiManager](https://github.com/tzapu/WiFiManager)
@@ -907,9 +955,11 @@ Device reboots immediately.
 - [NTPClient](https://github.com/arduino-libraries/NTPClient)
 
 **APIs**:
+
 - [Open-Meteo](https://open-meteo.com/) - Free weather API, no registration required
 
 **Tools**:
+
 - Arduino IDE 2.x
 - FTDI FT232RL USB-to-Serial adapter
 - Lots of coffee ☕
@@ -946,6 +996,7 @@ This project is released into the public domain. Do whatever you want with it. I
 This project started as "I don't trust this device" and ended as "I built something better."
 
 The original firmware had security holes you could drive a truck through. The custom replacement:
+
 - ✅ Doesn't leak WiFi passwords
 - ✅ Uses free, open APIs
 - ✅ Updates over WiFi
