@@ -7,6 +7,7 @@ Thank you for your interest in contributing! This project welcomes improvements,
 ### Reporting Bugs
 
 If you find a bug, please open an issue with:
+
 - Clear description of the problem
 - Steps to reproduce
 - Expected vs actual behavior
@@ -16,6 +17,7 @@ If you find a bug, please open an issue with:
 ### Suggesting Features
 
 Feature requests are welcome! Please include:
+
 - Use case description
 - Why this would be useful
 - Any implementation ideas
@@ -38,16 +40,19 @@ Feature requests are welcome! Please include:
 ### Code Guidelines
 
 **Memory Safety:**
+
 - Check IRAM usage after adding code
 - Use fixed-size buffers instead of dynamic allocation where possible
 - Prefer `snprintf` over String concatenation
 
 **Async Architecture:**
+
 - Keep loop() non-blocking (no delay() calls)
 - Use state machines for multi-step operations
 - Add exponential backoff to network operations
 
 **Testing:**
+
 - Test on ESP-01S hardware (1MB flash, 80KB RAM)
 - Verify OTA updates work
 - Check 24h stability
@@ -55,18 +60,21 @@ Feature requests are welcome! Please include:
 ## Development Setup
 
 ### Requirements
+
 - Arduino IDE 1.8.x or 2.x
 - ESP8266 board support (v3.0.0+)
 - Libraries (see README)
 
 ### Building
+
 ```bash
 # Arduino IDE: Sketch → Verify/Compile
 # Or use arduino-cli:
-arduino-cli compile --fqbn esp8266:esp8266:generic src/clock_ntp_ota_v1.9.ino
+arduino-cli compile --fqbn esp8266:esp8266:generic firmware/clock_ntp_ota_v1.9
 ```
 
 ### Testing
+
 ```bash
 # Upload via FTDI (first time)
 arduino-cli upload -p /dev/cu.usbserial* --fqbn esp8266:esp8266:generic
@@ -79,7 +87,7 @@ curl -u admin:admin -F "file=@build/*.bin" http://192.168.x.x/update
 
 ```
 esp8266-weather-clock-opensource/
-├── src/                    # Main firmware source
+├── firmware/               # Main firmware source (clock_ntp_ota_v1.9/)
 ├── docs/                   # Documentation
 ├── images/                 # Photos and screenshots
 ├── README.md               # Main documentation
