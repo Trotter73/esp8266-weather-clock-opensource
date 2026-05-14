@@ -988,7 +988,7 @@ void updateDisplay() {
 
   // === YELLOW ZONE (Y: 48-63): Date (size 2 = 16px height) ===
   display.setTextSize(2);
-  time_t t = epochTime;
+  time_t t = localTime;
   struct tm *ptm = gmtime(&t);
 
   // Format: "Thu 02.01" or "! Thu 02.01" if no WiFi
@@ -1453,7 +1453,7 @@ void ICACHE_FLASH_ATTR handleDebug() {
 
   if (weather.valid) {
     snprintf_P(buf, sizeof(buf), PSTR("Temperature: %.1f°C\nWeather code: %d\nWind speed: %.1f km/h\nLast update: %lu sec ago\n"),
-      weather.temperature, weather.weathercode, weather.windspeed, weather.lastUpdate/1000);
+      weather.temperature, weather.weathercode, weather.windspeed, (millis() - weather.lastUpdate)/1000);
     server.sendContent(buf);
   }
 
@@ -2081,7 +2081,7 @@ void onWeatherResponse(void* optParm, AsyncHTTPRequest* request, int readyState)
           sunTimes.lastDay = ptm->tm_yday;
         }
 
-        weatherState = WEATHER_SUCCESS;
+        // weatherState stays WEATHER_IDLE (set at readyState==4 entry) — allows periodic refresh
         weatherRetry.reset();  // Success! Reset retry counter
         Serial.printf("✓ Weather: %.1f°C, code %d, wind %.1f km/h\n",
                       weather.temperature, weather.weathercode, weather.windspeed);

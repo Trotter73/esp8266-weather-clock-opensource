@@ -83,7 +83,7 @@ void ICACHE_FLASH_ATTR onWeatherResponse(void* optParm, AsyncHTTPRequest* reques
           sunTimes.lastDay = ptm->tm_yday;
         }
 
-        weatherState = WEATHER_SUCCESS;
+        // weatherState stays WEATHER_IDLE (set at readyState==4 entry) — allows periodic refresh
         weatherRetry.reset();
         Serial.printf("Weather: %.1f C, code %d, wind %.1f km/h\n",
                       weather.temperature, weather.weathercode, weather.windspeed);

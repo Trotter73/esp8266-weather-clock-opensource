@@ -54,7 +54,7 @@ void ICACHE_FLASH_ATTR updateDisplay() {
 
   // === YELLOW ZONE (Y: 48-63): Date (size 2 = 16px height) ===
   display.setTextSize(2);
-  time_t t = epochTime;
+  time_t t = localTime;
   struct tm *ptm = gmtime(&t);
 
   // Format: "Thu 02.01" or "! Thu 02.01" if no WiFi

@@ -166,7 +166,7 @@ void ICACHE_FLASH_ATTR handleDebug() {
 
   if (weather.valid) {
     snprintf_P(buf, sizeof(buf), PSTR("Temperature: %.1f C\nWeather code: %d\nWind speed: %.1f km/h\nLast update: %lu sec ago\n"),
-      weather.temperature, weather.weathercode, weather.windspeed, weather.lastUpdate/1000);
+      weather.temperature, weather.weathercode, weather.windspeed, (millis() - weather.lastUpdate)/1000);
     server.sendContent(buf);
   }
 
