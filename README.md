@@ -27,7 +27,7 @@ I bought a cute weather clock kit from AliExpress ([TJ-56-654](https://pt.aliexp
 - [The Investigation](#the-investigation)
 - [The Solution: Custom Firmware](#the-solution-custom-firmware)
 - [Technical Deep Dive](#technical-deep-dive)
-- [The Journey: v1.7 → v1.9.2](#the-journey-v17--v192)
+- [The Journey: v1.7 → v1.9.4](#the-journey-v17--v194)
 - [What's Next: Home Assistant Integration](#whats-next-home-assistant-integration)
 - [How to Flash This Firmware](#how-to-flash-this-firmware)
 - [Web Interface](#web-interface)
@@ -395,7 +395,7 @@ Wire.begin(0, 2);  // SDA=GPIO0, SCL=GPIO2
 
 ---
 
-## The Journey: v1.7 → v1.9.2
+## The Journey: v1.7 → v1.9.4
 
 ### v1.7: Display Discovery ✅
 
@@ -475,7 +475,7 @@ void setup() {
 - ✅ Proper initialization order guaranteed
 - ✅ Device never freezes on WiFi loss during operation
 
-### v1.9.2: WiFi Resilience (Current) 🛡️
+### v1.9.2: WiFi Resilience 🛡️
 
 **Problem Discovered:**
 
@@ -510,7 +510,7 @@ if (wifiRetry.currentRetry >= wifiRetry.maxRetries) {
 - **Exponential backoff**: 5s → 10s → 20s → ... → 5min max
 - **Fallback AP** ("TJ56654-Setup") enabled after ~5 min, while still retrying
 - **Dual STA+AP mode**: Device continues reconnect attempts while AP is active
-- **SDK credentials support**: Tries WiFiManager-stored credentials first, then EEPROM
+- **SDK credentials**: Used only on first boot (no saved SSID); subsequent boots go straight to saved credentials
 - **"No WiFi" display**: Shows retry countdown instead of cryptic numbers
 - **"!" indicator**: Shown in date line when WiFi disconnected
 
@@ -542,6 +542,31 @@ if (wifiRetry.currentRetry >= wifiRetry.maxRetries) {
 [20-30s] First async NTP sync
          ✅ Time synced and displayed
 ```
+
+### v1.9.3: Modular Architecture 🗂️
+
+Split monolithic 2,100-line `.ino` into focused modules:
+
+| File                | Responsibility                          |
+| ------------------- | --------------------------------------- |
+| `weather_clock.ino` | Entry point: `setup()` and `loop()`     |
+| `config.h`          | Config struct, EEPROM layout, constants |
+| `globals.h`         | Shared state and extern declarations    |
+| `display.cpp`       | OLED rendering                          |
+| `ntp_client.cpp`    | Async NTP sync                          |
+| `weather.cpp`       | Open-Meteo API fetch                    |
+| `web_server.cpp`    | Web UI and REST API                     |
+| `wifi_manager.cpp`  | WiFi connection and resilience          |
+
+### v1.9.4: Bug Fixes & Cleanup ✅ (Current)
+
+Community-reported bugs fixed:
+
+- **Date timezone** (#5): Date now changes at local midnight, not UTC midnight
+- **Weather refresh** (#7): Periodic weather updates no longer blocked after first fetch
+- **WiFi hotspot** (#3): Device no longer connects to open SDK-cached networks (e.g. public hotspots) when a saved SSID exists, preventing config corruption
+- **ArduinoJson v7**: Updated `StaticJsonDocument` → `JsonDocument` for library compatibility
+- **Compiler warnings**: Removed unused variable, fixed sprintf buffer size
 
 ### Memory Evolution
 
@@ -975,10 +1000,7 @@ esp8266-weather-clock/
 │       └── weather_clock.ino       # Main firmware (~2,100 lines)
 ├── docs/
 │   ├── HARDWARE.md                 # Hardware specifications
-│   ├── INSTALLATION.md             # Flashing guide
-│   ├── v1.9_RELEASE_NOTES.md       # v1.9.0 async refactoring
-│   ├── v1.9.1_HYBRID_FIX.md        # WiFi startup fix
-│   └── v1.9.2_WIFI_RESILIENCE.md   # WiFi resilience documentation
+│   └── INSTALLATION.md             # Flashing guide
 ├── CHANGELOG.md                    # Version history
 └── README.md                       # This file
 ```
@@ -1016,4 +1038,4 @@ Now go make something cool. 🚀
 
 **Author**: apetrochenko
 **Date**: 2026-01-06
-**Firmware Version**: v1.9.2 (Production Ready)
+**Firmware Version**: v1.9.4 (Production Ready)

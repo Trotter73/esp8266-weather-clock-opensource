@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.4] - 2026-05-14
+
+### Fixed
+
+- **Date timezone** (#5): Date string now uses local time, so date rolls over at local midnight instead of UTC midnight
+- **Weather periodic refresh** (#7): Removed `WEATHER_SUCCESS` state that permanently blocked periodic weather updates after first fetch; also fixed "Last update" counter showing raw timestamp instead of elapsed seconds
+- **WiFi connects to wrong network** (#3): `WiFi.begin()` without params is now skipped when a saved SSID exists, preventing connection to SDK-cached open hotspots and config corruption
+
+### Changed
+
+- WiFi startup: SDK-cached credentials only attempted on first boot (no saved SSID); subsequent boots go directly to saved credentials
+- ArduinoJson: `StaticJsonDocument` → `JsonDocument` for compatibility with ArduinoJson v7
+
+### Removed
+
+- Unused `weekday` variable in NTP DST calculation (compiler warning)
+
+### Internal
+
+- Split `clock_ntp_ota_v1.9/` directory renamed to `weather_clock/` — version no longer baked into path
+- Removed internal development documents from repository
+
+## [1.9.3] - 2026-01-06
+
+### Changed
+
+- Refactored monolithic 2,100-line `.ino` into modular structure:
+  `display.cpp`, `ntp_client.cpp`, `weather.cpp`, `web_server.cpp`, `wifi_manager.cpp`
+
 ## [1.9.2] - 2026-01-06
 
 ### Fixed
