@@ -16,7 +16,6 @@ bool ICACHE_FLASH_ATTR isDST(unsigned long epochTime) {
 
   int month = timeinfo->tm_mon + 1; // 1-12
   int day = timeinfo->tm_mday;      // 1-31
-  int weekday = timeinfo->tm_wday;  // 0=Sunday
   int hour = timeinfo->tm_hour;
 
   // Not DST: November - February

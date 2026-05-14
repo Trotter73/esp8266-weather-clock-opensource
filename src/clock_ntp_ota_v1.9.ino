@@ -161,7 +161,6 @@ bool isDST(unsigned long epochTime) {
 
   int month = timeinfo->tm_mon + 1; // 1-12
   int day = timeinfo->tm_mday;      // 1-31
-  int weekday = timeinfo->tm_wday;  // 0=Sunday
   int hour = timeinfo->tm_hour;
 
   // Not DST: November - February
@@ -1101,7 +1100,7 @@ void ICACHE_FLASH_ATTR displaySunTimes() {
   int daylightMins = daylightMinutes % 60;
 
   // Format: "Day 9h 41m" or "9h 41m"
-  char daylightStr[16];
+  char daylightStr[32];
   sprintf(daylightStr, "Day %dh %dm", daylightHours, daylightMins);
 
   display.setTextSize(1);  // Size 1 to fit more text
@@ -2027,7 +2026,7 @@ void onWeatherResponse(void* optParm, AsyncHTTPRequest* request, int readyState)
       Serial.printf("✓ Weather response: %d bytes\n", payload.length());
 
       // Parse JSON response
-      StaticJsonDocument<1536> doc;
+      JsonDocument doc;
       DeserializationError error = deserializeJson(doc, payload);
 
       if (!error) {
