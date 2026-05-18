@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.6] - 2026-05-18
+
+### Fixed
+
+- **Weather hangs permanently after TCP timeout** (C1): `WEATHER_REQUESTING` state now has a
+  15-second watchdog — if the HTTP callback never fires (NAT timeout, server half-close),
+  state resets to IDLE and retry logic resumes
+- **All retry timers freeze at ~49 days** (C2): Replaced unsafe `millis() >= nextRetryTime`
+  with subtraction-safe `(millis() - nextRetryTime) < 0x80000000UL` in RetryConfig and
+  WiFiRetryConfig; fixed boot guard with static flag
+- **DST switches on wrong day** (H1): Last-Sunday formula was using year-only heuristic;
+  now computes weekday of the 31st from current `tm_wday`: verified correct for 2026–2030
+- **Heap fragmentation from web API polling** (H2): Replaced String+= concatenation with
+  `snprintf`+`sendContent` in `handleAPITime`, `handleAPIStatus`, `handleAPIDebug`,
+  `handleAPIWeather` — eliminates permanent heap fragmentation from 1s JS polling
+- **Race condition on shared state** (H3): Added `volatile` to `weatherState` and `ntpState`
+  — prevents compiler from caching stale values across ESPAsyncTCP callback boundaries
+- **Malformed JSON on long error messages**: `lastError` clamped to 79 chars before snprintf
+
+### Changed
+
+- RAM usage: 37,268 bytes (46%) — down from 37,560 due to String elimination in API handlers
+
 ## [1.9.5] - 2026-05-18
 
 ### Fixed
