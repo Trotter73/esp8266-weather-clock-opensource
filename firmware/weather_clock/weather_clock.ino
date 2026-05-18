@@ -50,9 +50,9 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000);
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 
-// State machines
-WeatherState weatherState = WEATHER_IDLE;
-NTPState ntpState = NTP_IDLE;
+// State machines — volatile: written from ESPAsyncTCP callbacks, read in main loop
+volatile WeatherState weatherState = WEATHER_IDLE;
+volatile NTPState ntpState = NTP_IDLE;
 WiFiConnectionState wifiConnState = WIFI_CONN_IDLE;
 
 // Retry configurations
@@ -92,6 +92,7 @@ SunTimes sunTimes;
 uint8_t displayMode = 0;
 unsigned long lastModeSwitch = 0;
 unsigned long lastWeatherUpdate = 0;
+unsigned long weatherRequestStart = 0;  // Tracks when WEATHER_REQUESTING began (TCP hang watchdog)
 
 // Dissolve transition state
 bool inTransition = false;
@@ -311,14 +312,23 @@ void loop() {
     }
   }
 
+  // Watchdog: reset if WEATHER_REQUESTING stuck >15s (TCP hang / half-open connection)
+  if (weatherState == WEATHER_REQUESTING && (millis() - weatherRequestStart) > 15000UL) {
+    Serial.println("Weather request timeout (TCP hang) — resetting state");
+    weatherState = WEATHER_IDLE;
+    weatherRetry.scheduleRetry();
+  }
+
   // Check for weather retry
   if (weatherRetry.isRetryTime() && weatherState == WEATHER_IDLE) {
     Serial.println("Weather retry time reached, attempting retry...");
     fetchWeatherAsync();
   }
 
-  // Update weather periodically
-  if (config.weather_enabled && millis() > 10000) {
+  // Update weather periodically (static flag avoids millis() > 10000 rollover trap)
+  static bool weatherBootReady = false;
+  if (!weatherBootReady && millis() > 10000UL) weatherBootReady = true;
+  if (config.weather_enabled && weatherBootReady) {
     unsigned long weatherInterval = config.weather_interval * 1000UL;
     if (millis() - lastWeatherUpdate > weatherInterval || lastWeatherUpdate == 0) {
       if (timeClient.isTimeSet() && weatherState == WEATHER_IDLE && !weatherRetry.isRetryTime()) {

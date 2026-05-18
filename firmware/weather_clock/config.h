@@ -70,7 +70,8 @@ struct RetryConfig {
   }
 
   bool isRetryTime() {
-    return nextRetryTime > 0 && millis() >= nextRetryTime;
+    // Subtraction-safe: works correctly across millis() rollover at ~49.7 days
+    return nextRetryTime > 0 && (millis() - nextRetryTime) < 0x80000000UL;
   }
 
   void reset() {
@@ -101,7 +102,8 @@ struct WiFiRetryConfig {
   }
 
   bool isRetryTime() {
-    return nextRetryTime > 0 && millis() >= nextRetryTime;
+    // Subtraction-safe: works correctly across millis() rollover at ~49.7 days
+    return nextRetryTime > 0 && (millis() - nextRetryTime) < 0x80000000UL;
   }
 
   void reset() {

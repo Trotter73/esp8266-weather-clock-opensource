@@ -26,7 +26,9 @@ bool ICACHE_FLASH_ATTR isDST(unsigned long epochTime) {
 
   // March: DST starts last Sunday at 01:00 UTC
   if (month == 3) {
-    int lastSunday = 31 - ((5 + timeinfo->tm_year) % 7);
+    // Compute weekday of the 31st from current day's weekday (tm_wday: 0=Sun)
+    int weekdayOf31 = (timeinfo->tm_wday + (31 - day)) % 7;
+    int lastSunday = 31 - weekdayOf31;
     if (day < lastSunday) return false;
     if (day > lastSunday) return true;
     if (hour < 1) return false;
@@ -35,7 +37,8 @@ bool ICACHE_FLASH_ATTR isDST(unsigned long epochTime) {
 
   // October: DST ends last Sunday at 01:00 UTC
   if (month == 10) {
-    int lastSunday = 31 - ((1 + timeinfo->tm_year) % 7);
+    int weekdayOf31 = (timeinfo->tm_wday + (31 - day)) % 7;
+    int lastSunday = 31 - weekdayOf31;
     if (day < lastSunday) return true;
     if (day > lastSunday) return false;
     if (hour < 1) return true;

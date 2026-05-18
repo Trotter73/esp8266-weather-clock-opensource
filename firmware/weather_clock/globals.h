@@ -29,9 +29,9 @@ extern NTPClient timeClient;
 extern ESP8266WebServer server;
 extern ESP8266HTTPUpdateServer httpUpdater;
 
-// State machines
-extern WeatherState weatherState;
-extern NTPState ntpState;
+// State machines — volatile: written from ESPAsyncTCP callbacks, read in main loop
+extern volatile WeatherState weatherState;
+extern volatile NTPState ntpState;
 extern WiFiConnectionState wifiConnState;
 
 // Retry configurations
@@ -71,6 +71,7 @@ extern SunTimes sunTimes;
 extern uint8_t displayMode;
 extern unsigned long lastModeSwitch;
 extern unsigned long lastWeatherUpdate;
+extern unsigned long weatherRequestStart;
 
 // Dissolve transition state
 extern bool inTransition;

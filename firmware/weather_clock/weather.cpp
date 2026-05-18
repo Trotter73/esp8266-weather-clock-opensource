@@ -156,6 +156,7 @@ void ICACHE_FLASH_ATTR fetchWeatherAsync() {
     weatherRequest.setTimeout(10);  // 10 seconds
     weatherRequest.send();
     weatherState = WEATHER_REQUESTING;
+    weatherRequestStart = millis();
     Serial.println("Weather request sent (non-blocking)");
   } else {
     weatherState = WEATHER_FAILED;

@@ -337,68 +337,98 @@ void ICACHE_FLASH_ATTR handleConfigSave() {
 }
 
 void ICACHE_FLASH_ATTR handleAPITime() {
-  String json = "{";
-  json += "\"time\":\"" + timeClient.getFormattedTime() + "\",";
-  json += "\"hours\":" + String(timeClient.getHours()) + ",";
-  json += "\"minutes\":" + String(timeClient.getMinutes()) + ",";
-  json += "\"seconds\":" + String(timeClient.getSeconds()) + ",";
-  json += "\"epoch\":" + String(timeClient.getEpochTime());
-  json += "}";
+  char buf[256];
 
-  server.send(200, "application/json", json);
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "application/json", "");
+
+  snprintf_P(buf, sizeof(buf),
+    PSTR("{\"time\":\"%s\",\"hours\":%d,\"minutes\":%d,\"seconds\":%d,\"epoch\":%lu}"),
+    timeClient.getFormattedTime().c_str(),
+    timeClient.getHours(),
+    timeClient.getMinutes(),
+    timeClient.getSeconds(),
+    timeClient.getEpochTime());
+  server.sendContent(buf);
+
+  server.sendContent("");
 }
 
 void ICACHE_FLASH_ATTR handleAPIStatus() {
-  String json = "{";
-  json += "\"wifi\":{";
-  json += "\"ssid\":\"" + String(WiFi.SSID()) + "\",";
-  json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
-  json += "\"rssi\":" + String(WiFi.RSSI()) + ",";
-  json += "\"hostname\":\"" + String(config.hostname) + "\"";
-  json += "},";
-  json += "\"time\":{";
-  json += "\"current\":\"" + timeClient.getFormattedTime() + "\",";
-  json += "\"timezone_offset\":" + String(config.timezone_offset) + ",";
-  json += "\"ntp_synced\":" + String(timeClient.isTimeSet() ? "true" : "false");
-  json += "},";
-  json += "\"system\":{";
-  json += "\"uptime\":" + String(millis() / 1000) + ",";
-  json += "\"free_heap\":" + String(ESP.getFreeHeap()) + ",";
-  json += "\"chip_id\":\"" + String(ESP.getChipId(), HEX) + "\"";
-  json += "}";
-  json += "}";
+  char buf[256];
 
-  server.send(200, "application/json", json);
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "application/json", "");
+
+  snprintf_P(buf, sizeof(buf),
+    PSTR("{\"wifi\":{\"ssid\":\"%s\",\"ip\":\"%s\",\"rssi\":%d,\"hostname\":\"%s\"},"),
+    WiFi.SSID().c_str(),
+    WiFi.localIP().toString().c_str(),
+    WiFi.RSSI(),
+    config.hostname);
+  server.sendContent(buf);
+
+  snprintf_P(buf, sizeof(buf),
+    PSTR("\"time\":{\"current\":\"%s\",\"timezone_offset\":%ld,\"ntp_synced\":%s},"),
+    timeClient.getFormattedTime().c_str(),
+    config.timezone_offset,
+    timeClient.isTimeSet() ? "true" : "false");
+  server.sendContent(buf);
+
+  snprintf_P(buf, sizeof(buf),
+    PSTR("\"system\":{\"uptime\":%lu,\"free_heap\":%u,\"chip_id\":\"%x\"}}"),
+    millis() / 1000,
+    ESP.getFreeHeap(),
+    ESP.getChipId());
+  server.sendContent(buf);
+
+  server.sendContent("");
 }
 
 void ICACHE_FLASH_ATTR handleAPIDebug() {
-  String json = "{";
-  json += "\"internet_connected\":" + String(internetConnected ? "true" : "false") + ",";
-  json += "\"ntp_attempts\":" + String(ntpAttempts) + ",";
-  json += "\"ntp_successes\":" + String(ntpSuccesses) + ",";
-  json += "\"last_error\":\"" + lastError + "\",";
-  json += "\"gateway\":\"" + WiFi.gatewayIP().toString() + "\",";
-  json += "\"dns\":\"" + WiFi.dnsIP().toString() + "\"";
-  json += "}";
+  char buf[256];
 
-  server.send(200, "application/json", json);
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "application/json", "");
+
+  snprintf_P(buf, sizeof(buf),
+    PSTR("{\"internet_connected\":%s,\"ntp_attempts\":%d,\"ntp_successes\":%d,\"last_error\":\"%s\",\"gateway\":\"%s\",\"dns\":\"%s\"}"),
+    internetConnected ? "true" : "false",
+    ntpAttempts,
+    ntpSuccesses,
+    lastError.c_str(),
+    WiFi.gatewayIP().toString().c_str(),
+    WiFi.dnsIP().toString().c_str());
+  server.sendContent(buf);
+
+  server.sendContent("");
 }
 
 void ICACHE_FLASH_ATTR handleAPIWeather() {
-  String json = "{";
-  json += "\"enabled\":" + String(config.weather_enabled ? "true" : "false") + ",";
-  json += "\"valid\":" + String(weather.valid ? "true" : "false") + ",";
-  json += "\"temperature\":" + String(weather.temperature, 1) + ",";
-  json += "\"weathercode\":" + String(weather.weathercode) + ",";
-  json += "\"windspeed\":" + String(weather.windspeed, 1) + ",";
-  json += "\"last_update\":" + String(weather.lastUpdate) + ",";
-  json += "\"sunrise\":\"" + String(sunTimes.sunrise) + "\",";
-  json += "\"sunset\":\"" + String(sunTimes.sunset) + "\",";
-  json += "\"sunrise_minutes\":" + String(sunTimes.sunriseMinutes) + ",";
-  json += "\"sunset_minutes\":" + String(sunTimes.sunsetMinutes);
-  json += "}";
+  char buf[256];
 
-  server.send(200, "application/json", json);
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "application/json", "");
+
+  snprintf_P(buf, sizeof(buf),
+    PSTR("{\"enabled\":%s,\"valid\":%s,\"temperature\":%.1f,\"weathercode\":%d,\"windspeed\":%.1f,\"last_update\":%lu,"),
+    config.weather_enabled ? "true" : "false",
+    weather.valid ? "true" : "false",
+    weather.temperature,
+    weather.weathercode,
+    weather.windspeed,
+    weather.lastUpdate);
+  server.sendContent(buf);
+
+  snprintf_P(buf, sizeof(buf),
+    PSTR("\"sunrise\":\"%s\",\"sunset\":\"%s\",\"sunrise_minutes\":%d,\"sunset_minutes\":%d}"),
+    sunTimes.sunrise,
+    sunTimes.sunset,
+    sunTimes.sunriseMinutes,
+    sunTimes.sunsetMinutes);
+  server.sendContent(buf);
+
+  server.sendContent("");
 }
 
 void ICACHE_FLASH_ATTR handleAPIConfigExport() {
