@@ -25,3 +25,6 @@ build/
 # Secrets (in case someone accidentally commits credentials)
 secrets.h
 config_local.h
+
+# Internal backlogs (not for public repo)
+BACKLOG_*.md
