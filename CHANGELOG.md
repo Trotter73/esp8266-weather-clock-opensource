@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.5] - 2026-05-18
+
+### Fixed
+
+- **Temperature disappears permanently** (#9): After 3 consecutive API failures,
+  the weather state machine was permanently locked — `weatherState` stayed `WEATHER_FAILED`
+  and no new requests were ever made even after the API recovered. Fix: reset retry
+  counter and state after max retries so periodic refresh resumes after next interval (30 min).
+
 ## [1.9.4] - 2026-05-14
 
 ### Fixed
