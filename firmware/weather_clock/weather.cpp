@@ -96,7 +96,10 @@ void ICACHE_FLASH_ATTR onWeatherResponse(void* optParm, AsyncHTTPRequest* reques
 
         weatherRetry.scheduleRetry();
         if (weatherRetry.maxRetriesReached()) {
-          Serial.println("Weather max retries reached");
+          // Reset so periodic refresh can retry after weatherInterval — prevents permanent lockup
+          Serial.println("Weather max retries reached, resetting for next interval");
+          weatherRetry.reset();
+          weatherState = WEATHER_IDLE;
         } else {
           unsigned long backoff = weatherRetry.getBackoffDelay() / 1000;
           Serial.printf("  Retry scheduled in %lu seconds\n", backoff);
@@ -113,7 +116,10 @@ void ICACHE_FLASH_ATTR onWeatherResponse(void* optParm, AsyncHTTPRequest* reques
 
       weatherRetry.scheduleRetry();
       if (weatherRetry.maxRetriesReached()) {
-        Serial.println("Weather max retries reached");
+        // Reset so periodic refresh can retry after weatherInterval — prevents permanent lockup
+        Serial.println("Weather max retries reached, resetting for next interval");
+        weatherRetry.reset();
+        weatherState = WEATHER_IDLE;
       } else {
         unsigned long backoff = weatherRetry.getBackoffDelay() / 1000;
         Serial.printf("  Retry scheduled in %lu seconds\n", backoff);
