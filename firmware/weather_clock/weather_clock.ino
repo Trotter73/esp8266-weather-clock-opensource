@@ -332,16 +332,29 @@ void loop() {
 
       if (wifiRetry.currentRetry >= 5 && WiFi.getMode() != WIFI_AP_STA) {
         Serial.println("Enabling fallback AP (dual mode)");
+        // Must set mode BEFORE WiFi.begin() — begin() resets mode to STA killing the AP
         WiFi.mode(WIFI_AP_STA);
         WiFi.softAP("TJ56654-Setup", "12345678");
         Serial.print("Fallback AP IP: ");
         Serial.println(WiFi.softAPIP());
       }
 
-      if (strlen(config.password) > 0) {
-        WiFi.begin(config.ssid, config.password);
+      // Reconnect STA side without changing mode (preserves AP_STA if active)
+      if (WiFi.getMode() == WIFI_AP_STA) {
+        // Use low-level reconnect to keep AP alive
+        WiFi.disconnect(false);
+        if (strlen(config.password) > 0) {
+          WiFi.begin(config.ssid, config.password);
+        } else {
+          WiFi.begin(config.ssid);
+        }
+        WiFi.mode(WIFI_AP_STA);  // Restore AP_STA after begin() may have reset it
       } else {
-        WiFi.begin();
+        if (strlen(config.password) > 0) {
+          WiFi.begin(config.ssid, config.password);
+        } else {
+          WiFi.begin(config.ssid);
+        }
       }
       wifiConnState = WIFI_CONN_CONNECTING;
       wifiConnectStart = millis();
