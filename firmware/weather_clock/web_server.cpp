@@ -387,16 +387,21 @@ void ICACHE_FLASH_ATTR handleAPIStatus() {
 
 void ICACHE_FLASH_ATTR handleAPIDebug() {
   char buf[256];
+  char errBuf[80];
 
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "application/json", "");
+
+  // Clamp lastError to prevent snprintf truncation causing malformed JSON
+  strncpy(errBuf, lastError.c_str(), sizeof(errBuf) - 1);
+  errBuf[sizeof(errBuf) - 1] = '\0';
 
   snprintf_P(buf, sizeof(buf),
     PSTR("{\"internet_connected\":%s,\"ntp_attempts\":%d,\"ntp_successes\":%d,\"last_error\":\"%s\",\"gateway\":\"%s\",\"dns\":\"%s\"}"),
     internetConnected ? "true" : "false",
     ntpAttempts,
     ntpSuccesses,
-    lastError.c_str(),
+    errBuf,
     WiFi.gatewayIP().toString().c_str(),
     WiFi.dnsIP().toString().c_str());
   server.sendContent(buf);
