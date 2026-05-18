@@ -110,6 +110,64 @@ void ICACHE_FLASH_ATTR safeStringCopy(const String& src, char* dest, size_t maxL
   dest[maxLen - 1] = '\0';
 }
 
+// ============ Triple power-cycle factory reset ============
+//
+// How it works: on each boot we increment a counter in EEPROM.
+// If the device runs for >10s the counter is cleared back to 0.
+// 3 quick power cycles before the 10s window = factory reset:
+//   clears WiFi credentials, reboots into WiFiManager AP mode.
+
+void ICACHE_FLASH_ATTR checkFactoryReset() {
+  EEPROM.begin(512);
+  ResetCounter rc;
+  EEPROM.get(RESET_COUNTER_ADDR, rc);
+
+  if (rc.magic != RESET_COUNTER_MAGIC) {
+    rc.magic = RESET_COUNTER_MAGIC;
+    rc.count = 0;
+  }
+
+  rc.count++;
+  Serial.printf("Boot counter: %d/%d (power-cycle %d more times within 10s to factory reset)\n",
+                rc.count, RESET_COUNTER_TRIPS, RESET_COUNTER_TRIPS - rc.count);
+
+  if (rc.count >= RESET_COUNTER_TRIPS) {
+    Serial.println("!!! FACTORY RESET triggered !!!");
+    rc.count = 0;
+    EEPROM.put(RESET_COUNTER_ADDR, rc);
+    EEPROM.commit();
+    EEPROM.end();
+
+    // Clear WiFi credentials only — keep other settings
+    memset(config.ssid, 0, sizeof(config.ssid));
+    memset(config.password, 0, sizeof(config.password));
+    saveConfig();
+
+    // Show reset screen
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(2);
+    display.setCursor(8, 4);
+    display.println("FACTORY");
+    display.setCursor(8, 24);
+    display.println("RESET!");
+    display.setTextSize(1);
+    display.setCursor(2, 48);
+    display.println("WiFi: TJ56654-Setup");
+    display.setCursor(2, 57);
+    display.println("Pass: 12345678");
+    display.display();
+
+    delay(4000);
+    ESP.restart();
+    return;
+  }
+
+  EEPROM.put(RESET_COUNTER_ADDR, rc);
+  EEPROM.commit();
+  EEPROM.end();
+}
+
 // ============ EEPROM functions ============
 
 void ICACHE_FLASH_ATTR loadConfig() {
@@ -219,6 +277,9 @@ void setup() {
   // Load configuration
   loadConfig();
 
+  // Check for triple power-cycle factory reset (must be after display+config init)
+  checkFactoryReset();
+
   // Setup WiFi
   setupWiFi();
 
@@ -323,6 +384,18 @@ void loop() {
   if (weatherRetry.isRetryTime() && weatherState == WEATHER_IDLE) {
     Serial.println("Weather retry time reached, attempting retry...");
     fetchWeatherAsync();
+  }
+
+  // Clear factory-reset boot counter after 10s of normal operation
+  static bool resetCounterCleared = false;
+  if (!resetCounterCleared && millis() > RESET_COUNTER_WINDOW) {
+    EEPROM.begin(512);
+    ResetCounter rc = { RESET_COUNTER_MAGIC, 0 };
+    EEPROM.put(RESET_COUNTER_ADDR, rc);
+    EEPROM.commit();
+    EEPROM.end();
+    resetCounterCleared = true;
+    Serial.println("Boot counter cleared — stable operation confirmed");
   }
 
   // Update weather periodically (static flag avoids millis() > 10000 rollover trap)

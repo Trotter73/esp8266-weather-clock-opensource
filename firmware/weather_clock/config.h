@@ -167,4 +167,16 @@ const unsigned long NTP_TIMEOUT_MS = 5000;  // 5 second timeout
 // WiFi timeout
 const unsigned long WIFI_TIMEOUT_MS = 10000;  // 10 second timeout
 
+// Triple power-cycle factory reset
+// Counter stored at EEPROM offset 480, well past Config (~260 bytes)
+#define RESET_COUNTER_ADDR   480
+#define RESET_COUNTER_MAGIC  0xA5
+#define RESET_COUNTER_WINDOW 10000UL  // 10s: if device runs longer, counter clears
+#define RESET_COUNTER_TRIPS  3        // 3 quick power cycles = factory reset
+
+struct ResetCounter {
+  uint8_t magic;
+  uint8_t count;
+};
+
 #endif // CONFIG_H
