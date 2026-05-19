@@ -298,6 +298,9 @@ static bool isValidSSID(const String& s) {
 }
 
 void ICACHE_FLASH_ATTR handleConfigSave() {
+  // Track if reboot is required (only WiFi/network changes need it)
+  bool needsRestart = false;
+
   // Validate before saving — reject obviously bad input rather than brick the device
   if (server.hasArg("ssid")) {
     String s = server.arg("ssid");
@@ -305,6 +308,7 @@ void ICACHE_FLASH_ATTR handleConfigSave() {
       server.send(400, "text/plain", "Invalid SSID (1-31 printable chars, not all-same)");
       return;
     }
+    if (s != String(config.ssid)) needsRestart = true;
     safeStringCopy(s, config.ssid, sizeof(config.ssid));
   }
   if (server.hasArg("password")) {
@@ -313,6 +317,7 @@ void ICACHE_FLASH_ATTR handleConfigSave() {
       server.send(400, "text/plain", "Password too long (max 63 chars)");
       return;
     }
+    if (p != String(config.password)) needsRestart = true;
     safeStringCopy(p, config.password, sizeof(config.password));
   }
   if (server.hasArg("timezone")) {
@@ -328,6 +333,7 @@ void ICACHE_FLASH_ATTR handleConfigSave() {
       server.send(400, "text/plain", "Invalid hostname length (1-31)");
       return;
     }
+    if (h != String(config.hostname)) needsRestart = true;  // mDNS bind on boot
     safeStringCopy(h, config.hostname, sizeof(config.hostname));
   }
   if (server.hasArg("city_name")) {
@@ -360,6 +366,7 @@ void ICACHE_FLASH_ATTR handleConfigSave() {
       server.send(400, "text/plain", "Invalid NTP server (1-63 chars)");
       return;
     }
+    if (n != String(config.ntp_server)) needsRestart = true;  // NTPClient re-init
     safeStringCopy(n, config.ntp_server, sizeof(config.ntp_server));
   }
   if (server.hasArg("display_rotation_sec")) {
@@ -372,19 +379,22 @@ void ICACHE_FLASH_ATTR handleConfigSave() {
 
   saveConfig();
 
-  String html = F("<!DOCTYPE html><html><head>");
-  html += F("<meta charset='UTF-8'>");
-  html += F("<meta http-equiv='refresh' content='5;url=/'>");
-  html += F("<style>body{font-family:Arial;text-align:center;margin-top:50px;}</style>");
-  html += F("</head><body>");
-  html += F("<h1>Configuration Saved!</h1>");
-  html += F("<p>Device will reboot in 5 seconds...</p>");
-  html += F("</body></html>");
-
-  server.send(200, "text/html", html);
-
-  delay(1000);
-  ESP.restart();
+  // Only restart for WiFi/network changes; other settings apply live
+  if (needsRestart) {
+    server.send(200, "text/html",
+      F("<!DOCTYPE html><meta charset='UTF-8'>"
+        "<meta http-equiv='refresh' content='5;url=/'>"
+        "<h1>Configuration Saved!</h1>"
+        "<p>WiFi/network changed — device will reboot in 5 seconds...</p>"));
+    delay(1000);
+    ESP.restart();
+  } else {
+    server.send(200, "text/html",
+      F("<!DOCTYPE html><meta charset='UTF-8'>"
+        "<meta http-equiv='refresh' content='2;url=/'>"
+        "<h1>Configuration Saved</h1>"
+        "<p>Applied without reboot. Returning to main page...</p>"));
+  }
 }
 
 void ICACHE_FLASH_ATTR handleAPITime() {

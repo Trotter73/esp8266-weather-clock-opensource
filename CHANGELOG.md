@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.8] - 2026-05-19
+
+### Fixed
+
+- **handleConfigSave always rebooted device on save**: only reboots now if WiFi/network
+  fields changed (`ssid`, `password`, `hostname`, `ntp_server`). Other settings
+  (brightness, timezone, intervals, coordinates, display options) apply live without
+  restart. Eliminates reboot cascades during config tweaks and makes the test suite
+  safe to run repeatedly.
+
 ## [1.9.7] - 2026-05-19
 
 ### Fixed

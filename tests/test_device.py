@@ -113,17 +113,14 @@ def suite_api_time():
     if data is None:
         test("Valid JSON", False, "parse error"); return
     test("Valid JSON", True)
-    test("Has 'current' field", "current" in data, str(data.keys()))
-    if "current" in data:
-        t = data["current"]
+    test("Has 'time' field", "time" in data, str(data.keys()))
+    if "time" in data:
+        t = data["time"]
         test("Time format HH:MM:SS", len(t) == 8 and t[2] == ":" and t[5] == ":",
              f"got '{t}'")
-        h, m, s = int(t[:2]), int(t[3:5]), int(t[6:])
-        test("Hour in 0-23", 0 <= h <= 23, f"h={h}")
-        test("Minute in 0-59", 0 <= m <= 59, f"m={m}")
-        test("Second in 0-59", 0 <= s <= 59, f"s={s}")
-    test("Has 'timezone_offset'", "timezone_offset" in data)
-    test("Has 'ntp_synced'", "ntp_synced" in data)
+    test("Has 'hours'", "hours" in data)
+    test("Has 'minutes'", "minutes" in data)
+    test("Has 'epoch'", "epoch" in data and data["epoch"] > 1700000000)
 
 def suite_api_weather():
     print("\n🌤  /api/weather")
