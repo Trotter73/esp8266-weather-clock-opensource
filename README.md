@@ -27,7 +27,7 @@ I bought a cute weather clock kit from AliExpress ([TJ-56-654](https://pt.aliexp
 - [The Investigation](#the-investigation)
 - [The Solution: Custom Firmware](#the-solution-custom-firmware)
 - [Technical Deep Dive](#technical-deep-dive)
-- [The Journey: v1.7 → v1.9.4](#the-journey-v17--v194)
+- [The Journey: v1.7 → v1.9.8](#the-journey-v17--v198)
 - [What's Next: Home Assistant Integration](#whats-next-home-assistant-integration)
 - [How to Flash This Firmware](#how-to-flash-this-firmware)
 - [Web Interface](#web-interface)
@@ -395,7 +395,7 @@ Wire.begin(0, 2);  // SDA=GPIO0, SCL=GPIO2
 
 ---
 
-## The Journey: v1.7 → v1.9.4
+## The Journey: v1.7 → v1.9.8
 
 ### v1.7: Display Discovery ✅
 
@@ -558,7 +558,7 @@ Split monolithic 2,100-line `.ino` into focused modules:
 | `web_server.cpp`    | Web UI and REST API                     |
 | `wifi_manager.cpp`  | WiFi connection and resilience          |
 
-### v1.9.4: Bug Fixes & Cleanup ✅ (Current)
+### v1.9.4: Community Bug Fixes 🐛
 
 Community-reported bugs fixed:
 
@@ -567,6 +567,33 @@ Community-reported bugs fixed:
 - **WiFi hotspot** (#3): Device no longer connects to open SDK-cached networks (e.g. public hotspots) when a saved SSID exists, preventing config corruption
 - **ArduinoJson v7**: Updated `StaticJsonDocument` → `JsonDocument` for library compatibility
 - **Compiler warnings**: Removed unused variable, fixed sprintf buffer size
+
+### v1.9.5: Weather Recovery 🌦
+
+- **Permanent weather lockup after 3 API failures** (#9): state machine no longer
+  deadlocks; resets to IDLE after max retries so periodic refresh resumes
+
+### v1.9.6: Long-Running Stability ⏱
+
+Six bugs found via dual AI code review (Sonnet + Gemini):
+
+- **WEATHER_REQUESTING timeout watchdog** (C1): 15s timeout prevents TCP-hang deadlock
+- **millis() rollover at 49.7 days** (C2): all retry timers now use subtraction-safe comparison
+- **DST formula mathematically wrong** (H1): now uses tm_wday-based last-Sunday calculation
+- **String heap fragmentation** (H2): API handlers use `snprintf+sendContent` instead of `String +=`
+- **Volatile shared state** (H3): `weatherState`/`ntpState` written from callbacks, read in loop
+- **Triple power-cycle factory reset**: 3 quick power cycles within 10s clears WiFi creds (no FTDI needed)
+
+### v1.9.7: Config Validation 🛡
+
+- **`/config` accepted any input, could brick device**: now rejects empty/all-same/oversized
+  SSIDs (HTTP 400), clamps numeric fields to safe ranges. Closes M1 from internal backlog.
+
+### v1.9.8: Live Config Updates ⚡ (Current)
+
+- **Restart only on WiFi/network changes**: brightness, timezone, intervals, coordinates,
+  display options apply live. Eliminates display blackouts on minor config tweaks.
+- **73/73 automated tests pass** on hardware including full fuzz suite
 
 ### Memory Evolution
 
@@ -577,6 +604,8 @@ Community-reported bugs fixed:
 | v1.9.0  | 37,516 (46%) | **61,987 (94%)** | 408,540 (38%) | Async libs added      |
 | v1.9.1  | 37,644 (46%) | **61,987 (94%)** | 408,844 (38%) | Hybrid WiFi fix       |
 | v1.9.2  | 37,800 (47%) | **61,987 (94%)** | 409,100 (39%) | WiFi resilience       |
+| v1.9.6  | 37,268 (46%) | **61,987 (94%)** | 410,436 (39%) | String → snprintf     |
+| v1.9.8  | 37,664 (46%) | **61,987 (94%)** | 411,380 (39%) | Live config updates   |
 
 **Verdict**: Stable memory usage, no leaks detected after 24h+ uptime tests.
 
@@ -996,14 +1025,38 @@ Device reboots immediately.
 ```
 esp8266-weather-clock/
 ├── firmware/
-│   └── weather_clock/
-│       └── weather_clock.ino       # Main firmware (~2,100 lines)
+│   └── weather_clock/              # Modular firmware
+│       ├── weather_clock.ino       # setup() and loop()
+│       ├── config.h                # Config struct, EEPROM layout
+│       ├── globals.h               # Shared state
+│       ├── display.cpp             # OLED rendering
+│       ├── ntp_client.cpp          # Async NTP + DST
+│       ├── weather.cpp             # Open-Meteo API
+│       ├── web_server.cpp          # HTTP UI + REST API
+│       └── wifi_manager.cpp        # WiFi resilience
+├── tests/
+│   └── test_device.py              # HW-in-the-loop test suite (73 cases)
 ├── docs/
 │   ├── HARDWARE.md                 # Hardware specifications
 │   └── INSTALLATION.md             # Flashing guide
 ├── CHANGELOG.md                    # Version history
 └── README.md                       # This file
 ```
+
+## Testing
+
+```bash
+# Hardware-in-the-loop test suite — verifies API, fuzzes config endpoint,
+# checks heap stability over 5 samples
+python3 tests/test_device.py 192.168.x.x
+```
+
+The test suite covers:
+
+- All REST API endpoints (functional validation)
+- Boundary fuzz against `/config` (oversized SSID, invalid intervals, etc.)
+- Malformed JSON fuzz against `/api/config` import
+- Heap stability check (must stay >20KB, drift <2KB across runs)
 
 ---
 
@@ -1038,4 +1091,4 @@ Now go make something cool. 🚀
 
 **Author**: apetrochenko
 **Date**: 2026-01-06
-**Firmware Version**: v1.9.4 (Production Ready)
+**Firmware Version**: v1.9.8 (Production Ready)

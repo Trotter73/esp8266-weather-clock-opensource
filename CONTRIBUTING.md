@@ -73,14 +73,42 @@ Feature requests are welcome! Please include:
 arduino-cli compile --fqbn esp8266:esp8266:generic firmware/weather_clock
 ```
 
-### Testing
+### Flashing
 
 ```bash
-# Upload via FTDI (first time)
-arduino-cli upload -p /dev/cu.usbserial* --fqbn esp8266:esp8266:generic
-
-# Upload via OTA (subsequent)
+# OTA upload (preferred, when device is on the network)
 curl -u admin:admin -F "file=@build/*.bin" http://192.168.x.x/update
+
+# Initial flash via FTDI (3.3V! ESP-01S in socket — no soldering)
+# 1. Pull ESP-01S from socket on TJ-56-654 PCB
+# 2. Connect: FTDI 3V3→3V3, GND→GND, TX↔RX crossed, GND→GPIO0
+# 3. Power on with GPIO0 grounded → bootloader mode
+esptool.py --port /dev/cu.usbserial-0001 --baud 115200 write_flash \
+  --flash_size 1MB --flash_mode dout 0x0 firmware.bin
+```
+
+### Running the test suite
+
+Hardware-in-the-loop tests verify functionality and resilience:
+
+```bash
+python3 tests/test_device.py <device-ip>
+```
+
+73 test cases cover REST API, config validation, fuzz testing, and heap stability.
+Safe to run repeatedly — validation rejects garbage, only WiFi changes reboot the device.
+
+### Recovery (bricked device)
+
+Triple power-cycle (≤10s apart, 3 times) triggers factory reset — clears WiFi
+credentials and shows AP info on the OLED. Connect to `TJ56654-Setup` /
+`12345678` and reconfigure via `http://192.168.4.1/config`.
+
+If that fails, full reset via FTDI:
+
+```bash
+esptool.py --port /dev/cu.usbserial-0001 erase_flash
+esptool.py --port /dev/cu.usbserial-0001 write_flash 0x0 firmware.bin
 ```
 
 ## Project Structure

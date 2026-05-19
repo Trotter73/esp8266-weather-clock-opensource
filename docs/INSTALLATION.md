@@ -499,6 +499,34 @@ To save memory, disable unused features:
 
 ---
 
+## Factory Reset (no tools needed)
+
+Since v1.9.6, three quick power cycles within 10 seconds trigger a factory reset:
+
+1. Power off the device
+2. Power on (briefly, < 10 sec)
+3. Power off, power on
+4. Power off, power on
+
+On the third boot the OLED shows `FACTORY RESET! WiFi: TJ56654-Setup Pass: 12345678`.
+Connect your phone to that AP and reconfigure WiFi at `http://192.168.4.1/config`.
+
+Use this if:
+
+- Forgot configured WiFi credentials
+- Device stuck in "No WiFi" loop after router change
+- Tests/fuzzing corrupted config
+
+## Verifying Installation
+
+Run the test suite against your device:
+
+```bash
+python3 tests/test_device.py 192.168.x.x
+```
+
+A healthy device passes all 73 tests, with heap drift under 1 KB across the run.
+
 ## Getting Help
 
 If you're still stuck:
