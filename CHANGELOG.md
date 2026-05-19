@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.9] - 2026-05-19
+
+### Fixed
+
+- **Factory reset atomicity**: cleared WiFi credentials are now committed BEFORE
+  the reset counter is zeroed. If power fails between the two writes, the device
+  still boots into WiFiManager AP on next start (cleared creds win over stale counter)
+  instead of being stuck in an inconsistent state
+- **`isValidSSID` rejected single-char SSIDs**: length-1 networks like "A" were
+  incorrectly flagged as all-same garbage. Now allowed (per 802.11 spec)
+- **`ntp_interval` config changes ignored until reboot**: `NTPClient` is constructed
+  in `setup()` with this value and never re-initialized. Now triggers `needsRestart`
+  when the interval actually changes
+- **Open WiFi (no password) failed to connect at setup** (M2): Try-2 block in
+  `setupWiFi()` required both ssid and password; now falls back to `WiFi.begin(ssid)`
+  when password is empty
+- **Unseeded PRNG, identical dissolve pattern every boot** (M4): `randomSeed()`
+  now called with `ESP.getChipId() ^ micros()` — varies between devices and boots
+
+### Removed
+
+- **Dead `NTPState` enum values** (M3): `NTP_WAITING`, `NTP_SUCCESS`, `NTP_FAILED`
+  were defined but never assigned. Removed to reduce code surface area
+
 ## [1.9.8] - 2026-05-19
 
 ### Fixed

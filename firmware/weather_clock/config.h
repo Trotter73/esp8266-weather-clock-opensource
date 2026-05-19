@@ -9,7 +9,7 @@
 #include <Arduino.h>
 
 // Firmware version
-#define FIRMWARE_VERSION "1.9.8"
+#define FIRMWARE_VERSION "1.9.9"
 
 // OLED I2C Configuration
 #define I2C_SDA 0  // GPIO0 (I2C Data) - SWAPPED!
@@ -120,13 +120,11 @@ enum WeatherState {
   WEATHER_FAILED
 };
 
-// Async NTP state machine
+// Async NTP state machine — only IDLE and REQUEST_SENT are used
+// (response handler transitions back to IDLE directly on success or timeout)
 enum NTPState {
   NTP_IDLE,
-  NTP_REQUEST_SENT,
-  NTP_WAITING,
-  NTP_SUCCESS,
-  NTP_FAILED
+  NTP_REQUEST_SENT
 };
 
 // Async WiFi state machine

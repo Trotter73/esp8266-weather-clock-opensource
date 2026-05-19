@@ -105,10 +105,14 @@ void ICACHE_FLASH_ATTR setupWiFi() {
     }
   }
 
-  // Try 2: If we have EEPROM credentials, try those
-  if (strlen(config.ssid) > 0 && strlen(config.password) > 0) {
+  // Try 2: If we have EEPROM credentials, try those (M2: support open networks)
+  if (strlen(config.ssid) > 0) {
     Serial.println("\nTrying EEPROM credentials...");
-    WiFi.begin(config.ssid, config.password);
+    if (strlen(config.password) > 0) {
+      WiFi.begin(config.ssid, config.password);
+    } else {
+      WiFi.begin(config.ssid);  // open network — no password
+    }
 
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {

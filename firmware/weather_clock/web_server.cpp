@@ -294,7 +294,8 @@ static bool isValidSSID(const String& s) {
     if (c < 0x20 || c > 0x7E) return false;  // non-printable
     if (c != first) allSame = false;
   }
-  return !allSame;  // reject "AAAAA...", "BBBBB...", etc.
+  // Single-char SSIDs ("A") are valid per 802.11. Only reject all-same for length>1.
+  return n == 1 || !allSame;
 }
 
 void ICACHE_FLASH_ATTR handleConfigSave() {
@@ -358,7 +359,9 @@ void ICACHE_FLASH_ATTR handleConfigSave() {
   }
   if (server.hasArg("ntp_interval")) {
     long ni = server.arg("ntp_interval").toInt();
-    config.ntp_interval = constrain(ni, 60L, 86400L);
+    unsigned long newInterval = constrain(ni, 60L, 86400L);
+    if (newInterval != config.ntp_interval) needsRestart = true;  // NTPClient constructed at boot with this
+    config.ntp_interval = newInterval;
   }
   if (server.hasArg("ntp_server")) {
     String n = server.arg("ntp_server");

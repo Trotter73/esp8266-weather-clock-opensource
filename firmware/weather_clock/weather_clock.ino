@@ -133,15 +133,21 @@ void ICACHE_FLASH_ATTR checkFactoryReset() {
 
   if (rc.count >= RESET_COUNTER_TRIPS) {
     Serial.println("!!! FACTORY RESET triggered !!!");
+
+    // Atomicity: clear credentials FIRST (saveConfig commits), then zero counter.
+    // If power fails between the two commits, the device boots into AP mode next
+    // time (creds are already cleared) — instead of being in a "counter zeroed but
+    // creds still valid" inconsistent state.
+    memset(config.ssid, 0, sizeof(config.ssid));
+    memset(config.password, 0, sizeof(config.password));
+    EEPROM.end();          // close current handle before saveConfig opens its own
+    saveConfig();          // commits cleared credentials to flash
+
+    EEPROM.begin(512);
     rc.count = 0;
     EEPROM.put(RESET_COUNTER_ADDR, rc);
     EEPROM.commit();
     EEPROM.end();
-
-    // Clear WiFi credentials only — keep other settings
-    memset(config.ssid, 0, sizeof(config.ssid));
-    memset(config.password, 0, sizeof(config.password));
-    saveConfig();
 
     // Show reset screen
     display.clearDisplay();
@@ -244,6 +250,11 @@ void ICACHE_FLASH_ATTR setupOTA() {
 void setup() {
   Serial.begin(115200);
   delay(100);
+
+  // Seed PRNG with hardware entropy: chip ID is unique per device,
+  // micros() varies on each boot due to power-on timing jitter
+  randomSeed(ESP.getChipId() ^ micros());
+
   Serial.println("\n\nTJ-56-654 NTP Clock with OTA v" FIRMWARE_VERSION);
   Serial.println("==========================================");
   Serial.println("Display: GM009605v4.3 OLED 128x64 (SSD1306 I2C)");
