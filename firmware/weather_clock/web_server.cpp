@@ -283,39 +283,90 @@ void ICACHE_FLASH_ATTR handleConfig() {
   server.sendContent("");
 }
 
+// Validate SSID: 1-31 printable ASCII chars, not all-same-char (likely fuzz garbage)
+static bool isValidSSID(const String& s) {
+  size_t n = s.length();
+  if (n == 0 || n > 31) return false;
+  char first = s[0];
+  bool allSame = true;
+  for (size_t i = 0; i < n; i++) {
+    char c = s[i];
+    if (c < 0x20 || c > 0x7E) return false;  // non-printable
+    if (c != first) allSame = false;
+  }
+  return !allSame;  // reject "AAAAA...", "BBBBB...", etc.
+}
+
 void ICACHE_FLASH_ATTR handleConfigSave() {
+  // Validate before saving — reject obviously bad input rather than brick the device
   if (server.hasArg("ssid")) {
-    safeStringCopy(server.arg("ssid"), config.ssid, sizeof(config.ssid));
+    String s = server.arg("ssid");
+    if (!isValidSSID(s)) {
+      server.send(400, "text/plain", "Invalid SSID (1-31 printable chars, not all-same)");
+      return;
+    }
+    safeStringCopy(s, config.ssid, sizeof(config.ssid));
   }
   if (server.hasArg("password")) {
-    safeStringCopy(server.arg("password"), config.password, sizeof(config.password));
+    String p = server.arg("password");
+    if (p.length() > 63) {
+      server.send(400, "text/plain", "Password too long (max 63 chars)");
+      return;
+    }
+    safeStringCopy(p, config.password, sizeof(config.password));
   }
   if (server.hasArg("timezone")) {
-    config.timezone_offset = server.arg("timezone").toInt();
+    long tz = server.arg("timezone").toInt();
+    config.timezone_offset = constrain(tz, -43200L, 43200L);  // ±12h
   }
   if (server.hasArg("brightness")) {
-    config.brightness = server.arg("brightness").toInt();
+    config.brightness = constrain(server.arg("brightness").toInt(), 0, 7);
   }
   if (server.hasArg("hostname")) {
-    safeStringCopy(server.arg("hostname"), config.hostname, sizeof(config.hostname));
+    String h = server.arg("hostname");
+    if (h.length() == 0 || h.length() > 31) {
+      server.send(400, "text/plain", "Invalid hostname length (1-31)");
+      return;
+    }
+    safeStringCopy(h, config.hostname, sizeof(config.hostname));
   }
   if (server.hasArg("city_name")) {
-    safeStringCopy(server.arg("city_name"), config.city_name, sizeof(config.city_name));
+    String c = server.arg("city_name");
+    if (c.length() > 31) {
+      server.send(400, "text/plain", "City name too long (max 31)");
+      return;
+    }
+    safeStringCopy(c, config.city_name, sizeof(config.city_name));
   }
   if (server.hasArg("latitude")) {
-    config.latitude = server.arg("latitude").toFloat();
+    float lat = server.arg("latitude").toFloat();
+    config.latitude = constrain(lat, -90.0f, 90.0f);
   }
   if (server.hasArg("longitude")) {
-    config.longitude = server.arg("longitude").toFloat();
+    float lon = server.arg("longitude").toFloat();
+    config.longitude = constrain(lon, -180.0f, 180.0f);
   }
   if (server.hasArg("weather_interval")) {
-    config.weather_interval = server.arg("weather_interval").toInt();
+    long wi = server.arg("weather_interval").toInt();
+    config.weather_interval = constrain(wi, 60L, 86400L);  // 1min to 1day
+  }
+  if (server.hasArg("ntp_interval")) {
+    long ni = server.arg("ntp_interval").toInt();
+    config.ntp_interval = constrain(ni, 60L, 86400L);
+  }
+  if (server.hasArg("ntp_server")) {
+    String n = server.arg("ntp_server");
+    if (n.length() == 0 || n.length() > 63) {
+      server.send(400, "text/plain", "Invalid NTP server (1-63 chars)");
+      return;
+    }
+    safeStringCopy(n, config.ntp_server, sizeof(config.ntp_server));
   }
   if (server.hasArg("display_rotation_sec")) {
-    config.display_rotation_sec = server.arg("display_rotation_sec").toInt();
+    config.display_rotation_sec = constrain(server.arg("display_rotation_sec").toInt(), 1, 60);
   }
   if (server.hasArg("display_orientation")) {
-    config.display_orientation = server.arg("display_orientation").toInt();
+    config.display_orientation = constrain(server.arg("display_orientation").toInt(), 0, 3);
     display.setRotation(config.display_orientation);
   }
 
