@@ -97,6 +97,7 @@ void ICACHE_FLASH_ATTR setupWiFi() {
       Serial.println(WiFi.dnsIP());
 
       safeStringCopy(WiFi.SSID(), config.ssid, sizeof(config.ssid));
+      safeStringCopy("<password>", config.password, sizeof(config.password))
       saveConfig();
 
       showIP();
