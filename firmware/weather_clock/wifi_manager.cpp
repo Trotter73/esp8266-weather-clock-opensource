@@ -93,7 +93,6 @@ void ICACHE_FLASH_ATTR setupWiFi() {
   }
 
   // No stored credentials - use WiFiManager
-  if (strlen(config.ssid) == 0) {
     Serial.println("\nNo saved credentials, using WiFiManager...");
     WiFiManager wifiManager;
     wifiManager.setConfigPortalTimeout(180);
