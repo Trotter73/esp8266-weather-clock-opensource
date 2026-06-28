@@ -67,46 +67,7 @@ void ICACHE_FLASH_ATTR setupWiFi() {
   WiFi.hostname(config.hostname);
   WiFi.mode(WIFI_STA);
 
-  // Try 1: Use WiFi.begin() without params - only when no SSID is configured.
-  // Skipped if user has a saved SSID: SDK-cached credentials may include open
-  // networks (e.g. public hotspots) that would be preferred over the user's
-  // network, and a successful connect would overwrite config.ssid (issue #3).
-  if (strlen(config.ssid) == 0) {
-    Serial.println("No SSID configured, trying SDK-stored credentials...");
-    WiFi.begin();
-
-    // SYNCHRONOUS wait for connection (max 10 seconds)
-    Serial.print("Connecting to WiFi");
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-      showWiFiConnecting(attempts);
-      delay(500);
-      Serial.print(".");
-      attempts++;
-    }
-
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("\nWiFi connected!");
-      Serial.print("SSID: ");
-      Serial.println(WiFi.SSID());
-      Serial.print("IP: ");
-      Serial.println(WiFi.localIP());
-      Serial.print("Gateway: ");
-      Serial.println(WiFi.gatewayIP());
-      Serial.print("DNS: ");
-      Serial.println(WiFi.dnsIP());
-
-      safeStringCopy(WiFi.SSID(), config.ssid, sizeof(config.ssid));
-      safeStringCopy("<password>", config.password, sizeof(config.password));
-      saveConfig();
-
-      showIP();
-      wifiConnState = WIFI_CONN_CONNECTED;
-      return;
-    }
-  }
-
-  // Try 2: If we have EEPROM credentials, try those (M2: support open networks)
+  // If we have EEPROM credentials, try those (M2: support open networks)
   if (strlen(config.ssid) > 0) {
     Serial.println("\nTrying EEPROM credentials...");
     if (strlen(config.password) > 0) {
@@ -168,6 +129,7 @@ void ICACHE_FLASH_ATTR setupWiFi() {
     Serial.println(WiFi.localIP());
 
     safeStringCopy(WiFi.SSID(), config.ssid, sizeof(config.ssid));
+    safeStringCopy(WiFi.psk().c_str(), config.password, sizeof(config.password));
     saveConfig();
 
     showIP();
@@ -175,9 +137,3 @@ void ICACHE_FLASH_ATTR setupWiFi() {
     return;
   }
 
-  // We have credentials but WiFi is not available
-  Serial.println("\nWiFi not available. Will retry in background.");
-  wifiConnState = WIFI_CONN_FAILED;
-  wifiRetry.scheduleRetry();
-  showNoWiFi(wifiRetry.getBackoffDelay() / 1000);
-}
